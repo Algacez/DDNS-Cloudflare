@@ -3,14 +3,27 @@ import http.client
 import json
 from datetime import datetime
 
-# 获取当前IP地址
-def get_current_ip():
-    with open('ip.txt', 'r') as file:
-        ip = file.readline().strip()
-    return ip
+# 清除ip.txt的内容
+open('ip.txt', 'w').close()
 
-# 上传IP地址到Cloudflare
-def dns_update_ip(ip):
+# 发送GET请求获取IP地址
+url = 'http://api.ipify.org'
+response = requests.get(url)
+
+if response.status_code == 200:
+    # 将IP地址保存到ip.txt文件中
+    with open('ip.txt', 'w') as file:
+        file.write(response.text + '\n')
+    
+    # 将当前时间和IP地址保存到logs.txt文件中
+    now = datetime.now()
+    current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+    with open('logs.txt', 'a') as log_file:
+        log_file.write(f"{current_time} - {response.text}\n")
+    
+    print('IP地址已保存到ip.txt文件中，并已保存日志到logs.txt文件中。')
+
+    # 上传IP地址到Cloudflare
     CF_Email = "alice@example.com"
     CF_Token = "0932a09c9a9d"
     CF_Zone_ID = "a900b9a9d8a9"
@@ -28,7 +41,7 @@ def dns_update_ip(ip):
     payload = {
         "type": "A",
         "name": "example.com",  # 修改为你的域名
-        "content": ip,
+        "content": response.text,
         "ttl": 120,
     }
 
@@ -38,11 +51,5 @@ def dns_update_ip(ip):
     data = res.read()
 
     print(data.decode("utf-8"))
-
-# 主函数
-def main():
-    ip = get_current_ip()
-    dns_update_ip(ip)
-
-if __name__ == '__main__':
-    main()
+else:
+    print('获取IP地址失败。')
