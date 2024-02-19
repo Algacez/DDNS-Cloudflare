@@ -3,7 +3,7 @@ import http.client
 import json
 from datetime import datetime
 
-domain = ""
+domains = ["example1.com", "example2.com"]  # 添加你要处理的域名列表
 CF_Email = ""
 CF_Zone_ID = ""
 CF_API_Key = ""
@@ -79,8 +79,8 @@ def main():
     clear_ip_file()
     get_ip_and_save()
     ip = get_current_ip()
-    dns_name = domain  
-    dns_update_ip(ip, dns_name, CF_Zone_ID)
+    for domain in domains:
+        dns_update_ip(ip, domain, CF_Zone_ID)
 
 if __name__ == '__main__':
     main()
