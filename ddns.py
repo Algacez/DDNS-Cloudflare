@@ -3,8 +3,13 @@ import http.client
 import json
 from datetime import datetime
 
+domain = ""
+CF_Email = ""
+CF_Zone_ID = ""
+CF_API_Key = ""
+CF_Token = ""
+
 def clear_ip_file():
-    # 清除ip.txt的内容
     open('ip.txt', 'w').close()
 
 def get_ip_and_save():
@@ -29,16 +34,29 @@ def get_current_ip():
         ip = file.readline().strip()
     return ip
 
-def dns_update_ip(ip):
-    CF_Email = "alice@example.com"
-    CF_Token = "0932a09c9a9d"
-    CF_Zone_ID = "a900b9a9d8a9"
-    CF_API_Key = "cb7de90"
+def get_record_id(dns_name, zone_id):
+    resp = requests.get(
+        'https://api.cloudflare.com/client/v4/zones/{}/dns_records'.format(zone_id),
+        headers={
+            'Authorization': 'Bearer ' + CF_Token,
+            'Content-Type': 'application/json'
+        })
+    if not json.loads(resp.text)['success']:
+        return None
+    domains = json.loads(resp.text)['result']
+    for domain in domains:
+        if dns_name == domain['name']:
+            return domain['id']
+    return None
+
+def dns_update_ip(ip, dns_name, zone_id):
+    record_id = get_record_id(dns_name, zone_id)
+    if record_id is None:
+        print('找不到DNS记录。')
+        return
 
     headers = {
         'Content-Type': "application/json",
-        'X-Auth-Email': CF_Email,
-        'X-Auth-Key': CF_API_Key,
         'Authorization': 'Bearer ' + CF_Token,
     }
 
@@ -46,12 +64,11 @@ def dns_update_ip(ip):
 
     payload = {
         "type": "A",
-        "name": "example.com",  # 修改为你的域名
+        "name": dns_name,
         "content": ip,
-        "ttl": 120,
     }
 
-    conn.request("PUT", f"/client/v4/zones/{CF_Zone_ID}/dns_records/09f0ea0", json.dumps(payload), headers)
+    conn.request("PUT", f"/client/v4/zones/{zone_id}/dns_records/{record_id}", json.dumps(payload), headers)
 
     res = conn.getresponse()
     data = res.read()
@@ -62,7 +79,8 @@ def main():
     clear_ip_file()
     get_ip_and_save()
     ip = get_current_ip()
-    dns_update_ip(ip)
+    dns_name = domain  
+    dns_update_ip(ip, dns_name, CF_Zone_ID)
 
 if __name__ == '__main__':
     main()

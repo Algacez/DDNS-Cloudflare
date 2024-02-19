@@ -1,5 +1,6 @@
 IPv4
 https://ipinfo.io/ip
+http://api.ipify.org
 
 IPv6
 https://6.ipw.cn/
